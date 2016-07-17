@@ -165,7 +165,27 @@ extern fn on_view_request_resize(view: WlcView, edges: ResizeEdge, origin: &Poin
     start_interactive_resize(&view, edges, origin);
 }
 
-// pretty straight forward function, just do some special thing
+// TODO: reduce duplication
+fn launch_terminal() {
+    let term_program = std::env::var("WAYLAND_TERMINAL")
+        .unwrap_or(String::from("/usr/bin/urxvt"));
+    Command::new("sh")
+        .arg("-c")
+        .arg(term_program)
+        .spawn()
+        .expect("Unable to launch terminal");
+}
+
+fn launch_finder() {
+    let finder_program = std::env::var("WAYLAND_FINDER")
+        .unwrap_or(String::from("/usr/bin/dmenu_run"));
+    Command::new("sh")
+        .arg("-c")
+        .arg(finder_program)
+        .spawn()
+        .expect("Unable to launch finder");
+}
+
 extern fn on_keyboard_key(view: WlcView, _time: u32,
                           mods: &KeyboardModifiers, key: u32,
                           state: KeyState) -> bool {
