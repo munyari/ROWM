@@ -21,6 +21,7 @@ extern crate rustwlc;
 use std::sync::RwLock;
 use std::io::Write;
 use rustwlc::*;
+use std::process::Command;
 
 use std::cmp;
 
