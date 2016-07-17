@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Panashe M. Fundira <fundirap@gmail.com>"]
 
 [dependencies]
+rustwlc = "0.4.0"
+
