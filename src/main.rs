@@ -21,9 +21,16 @@ extern crate rustwlc;
 use std::sync::RwLock;
 use std::io::Write;
 use rustwlc::*;
-use rustwlc::xkb::keysyms;
 
 use std::cmp;
+
+use rustwlc::xkb::keysyms::*;
+use rustwlc::xkb::Keysym;
+
+const KEY_DOWN: Keysym = KEY_Down;
+const KEY_ESCAPE: Keysym = KEY_Escape;
+const KEY_RETURN: Keysym = KEY_Return;
+const MOD_SUPER: KeyMod = MOD_MOD4;
 
 struct Compositor {
     pub view: Option<WlcView>,
@@ -204,37 +211,39 @@ fn launch_finder() {
 extern fn on_keyboard_key(view: WlcView, _time: u32,
                           mods: &KeyboardModifiers, key: u32,
                           state: KeyState) -> bool {
-    use std::process::Command;
     let sym = input::keyboard::get_keysym_for_key(key, &mods.mods);
-    if state == KeyState::Pressed {
-        if mods.mods == MOD_CTRL {
-            // Key Q
-            if sym == keysyms::KEY_q {
+    if state == KeyState::Pressed && mods.mods == MOD_SUPER {
+        match sym {
+            KEY_Q => {
                 // not the root window (desktop background) then close the window
                 if view.is_window() {
                     view.close();
                 }
-                return true;
-            } else if sym == keysyms::KEY_Down {
+                true
+            }
+            KEY_DOWN => {
                 view.send_to_back();
                 get_topmost_view(&view.get_output(), 0).unwrap().focus();
-                return true;
-            } else if sym == keysyms::KEY_Escape {
-                terminate();
-                return true;
-            } else if sym == keysyms::KEY_Return {
-                let _ = Command::new("sh")
-                                .arg("-c")
-                                .arg("/usr/bin/urxvt || echo a").spawn()
-                                .unwrap_or_else(|e| {
-                                    println!("Error spawning child: {}", e);
-                                    panic!("spawning child")
-                                });
-                return true;
+                true
             }
+            KEY_ESCAPE => {
+                terminate();
+                true
+            }
+            KEY_RETURN => {
+                launch_terminal();
+                true
+            }
+            KEY_P => {
+                launch_finder();
+                true
+            }
+            _ => false,
         }
     }
-    return false;
+    else {
+        false
+    }
 }
 
 extern fn on_pointer_button(view: WlcView, _time: u32,
