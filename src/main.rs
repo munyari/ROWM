@@ -387,15 +387,14 @@ fn print_disclaimer() -> () {
 }
 
 fn main() {
-    // TODO: include license and version stuff
     println_stderr!("Starting up ROWM");
     // Shouldn't this go on STDERR?
     print_disclaimer();
 
+    initialize_callbacks();
 
     rustwlc::log_set_default_handler();
-    let run_wlc = rustwlc::init().expect("Unable to initialize wlc!");
+    let wlc_event_loop = rustwlc::init().expect("Unable to initialize wlc!");
 
-    // hand control over to wlc's control loop
-    run_wlc();
+    wlc_event_loop()
 }
