@@ -357,6 +357,15 @@ extern fn on_pointer_motion(_in_view: WlcView, _time: u32,
     }
 }
 
+pub extern fn on_view_request_geometry(view: WlcView, geometry: &Geometry) {
+    view.set_geometry(EDGE_NONE, geometry);
+}
+
+pub extern fn on_view_request_state(view: WlcView, state: ViewState,
+                                 handled: bool) {
+    view.set_state(state, handled);
+}
+
 // a macro for printing to stderr
 macro_rules! println_stderr(
     ($($arg:tt)*) => { {
@@ -365,10 +374,7 @@ macro_rules! println_stderr(
     } }
 );
 
-fn main() {
-    // TODO: include license and version stuff
-    println_stderr!("Starting up ROWM");
-
+fn initialize_callbacks() {
     callback::output_resolution(on_output_resolution);
     callback::view_created(on_view_created);
     callback::view_destroyed(on_view_destroyed);
@@ -378,6 +384,10 @@ fn main() {
     callback::keyboard_key(on_keyboard_key);
     callback::pointer_button(on_pointer_button);
     callback::pointer_motion(on_pointer_motion);
+    callback::view_request_geometry(on_view_request_geometry);
+    callback::view_request_state(on_view_request_state);
+}
+
 fn print_disclaimer() -> () {
     let disclaimer = "ROWM -  Copyright (C) 2016  Panashe M. Fundira \
     \nThis program comes with ABSOLUTELY NO WARRANTY \
