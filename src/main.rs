@@ -190,7 +190,7 @@ extern fn on_keyboard_key(view: WlcView, _time: u32,
             } else if sym == keysyms::KEY_Return {
                 let _ = Command::new("sh")
                                 .arg("-c")
-                                .arg("/usr/bin/weston-terminal || echo a").spawn()
+                                .arg("/usr/bin/urxvt || echo a").spawn()
                                 .unwrap_or_else(|e| {
                                     println!("Error spawning child: {}", e);
                                     panic!("spawning child")
