@@ -12,6 +12,7 @@ use std::cmp;
 struct Compositor {
     pub view: Option<WlcView>,
     pub grab: Point,
+    // which edge is being used to resize a window
     pub edges: ResizeEdge
 }
 
@@ -62,12 +63,17 @@ fn start_interactive_resize(view: &WlcView, edges: ResizeEdge, origin: &Point) {
     {
         let mut comp = COMPOSITOR.write().unwrap();
         comp.edges = edges.clone();
+        // not sure what this means
+        // I think this means that the edges set is non-empty
         if comp.edges.bits() == 0 {
             let flag_x = if origin.x < halfw {
+                // left edge
                 RESIZE_LEFT
             } else if origin.x > halfw {
+                // right edge
                 RESIZE_RIGHT
             } else {
+                // empty set of flags
                 ResizeEdge::empty()
             };
 
@@ -135,7 +141,7 @@ extern fn on_view_created(view: WlcView) -> bool {
     view.set_mask(view.get_output().get_mask());
     view.bring_to_front();
     view.focus();
-    render_output(&(view).get_output());
+    render_output(&view.get_output());
     true
 }
 
@@ -158,14 +164,18 @@ extern fn on_view_request_resize(view: WlcView, edges: ResizeEdge, origin: &Poin
     start_interactive_resize(&view, edges, origin);
 }
 
-extern fn on_keyboard_key(view: WlcView, _time: u32, mods: &KeyboardModifiers, key: u32, state: KeyState) -> bool {
+// pretty straight forward function, just do some special thing
+extern fn on_keyboard_key(view: WlcView, _time: u32,
+                          mods: &KeyboardModifiers, key: u32,
+                          state: KeyState) -> bool {
     use std::process::Command;
     let sym = input::keyboard::get_keysym_for_key(key, &mods.mods);
     if state == KeyState::Pressed {
         if mods.mods == MOD_CTRL {
             // Key Q
             if sym == keysyms::KEY_q {
-                if !view.is_root() {
+                // not the root window (desktop background) then close the window
+                if view.is_window() {
                     view.close();
                 }
                 return true;
@@ -181,7 +191,9 @@ extern fn on_keyboard_key(view: WlcView, _time: u32, mods: &KeyboardModifiers, k
                                 .arg("-c")
                                 .arg("/usr/bin/weston-terminal || echo a").spawn()
                                 .unwrap_or_else(|e| {
-                                    println!("Error spawning child: {}", e); panic!("spawning child")});
+                                    println!("Error spawning child: {}", e);
+                                    panic!("spawning child")
+                                });
                 return true;
             }
         }
@@ -189,10 +201,14 @@ extern fn on_keyboard_key(view: WlcView, _time: u32, mods: &KeyboardModifiers, k
     return false;
 }
 
-extern fn on_pointer_button(view: WlcView, _time: u32, mods: &KeyboardModifiers, button: u32, state: ButtonState, point: &Point) -> bool {
+extern fn on_pointer_button(view: WlcView, _time: u32,
+                            mods: &KeyboardModifiers, button: u32,
+                            state: ButtonState, point: &Point) -> bool {
     if state == ButtonState::Pressed {
-        if !view.is_root() && mods.mods.contains(MOD_CTRL) {
+        // not the root window (desktop background)
+        if view.is_window() && mods.mods.contains(MOD_CTRL) {
             view.focus();
+            // The following is is CTRL is being pressed
             if mods.mods.contains(MOD_CTRL) {
                 // Button left, we need to include linux/input.h somehow
                 if button == 0x110 {
@@ -214,15 +230,22 @@ extern fn on_pointer_button(view: WlcView, _time: u32, mods: &KeyboardModifiers,
     }
 }
 
-extern fn on_pointer_motion(_in_view: WlcView, _time: u32, point: &Point) -> bool {
+extern fn on_pointer_motion(_in_view: WlcView, _time: u32,
+                            point: &Point) -> bool {
     rustwlc::input::pointer::set_position(point);
     {
+        // read in the IO sense
         let comp = COMPOSITOR.read().unwrap();
+        // If the compositior has a view..
         if let Some(ref view) = comp.view {
+            // change in x and y
             let dx = point.x - comp.grab.x;
             let dy = point.y - comp.grab.y;
+            // geo is the geometry of the compositor's view
+            // geomety represents location and size of the view
             let mut geo = view.get_geometry().unwrap().clone();
             if comp.edges.bits() != 0 {
+                // minimum size for a view
                 let min = Size { w: 80u32, h: 40u32 };
                 let mut new_geo = geo.clone();
 
@@ -258,6 +281,7 @@ extern fn on_pointer_motion(_in_view: WlcView, _time: u32, point: &Point) -> boo
                     }
                 }
 
+                // only update if we're not moving into illegal territory
                 if new_geo.size.w >= min.w {
                     geo.origin.x = new_geo.origin.x;
                     geo.size.w = new_geo.size.w;
@@ -268,9 +292,12 @@ extern fn on_pointer_motion(_in_view: WlcView, _time: u32, point: &Point) -> boo
                     geo.size.h = new_geo.size.h;
                 }
 
+                // set the geometry for the view, and pass the edges changed
+                // by interactive resize
                 view.set_geometry(comp.edges, &geo);
             }
             else {
+                // The window has been moved, rather than resized
                 geo.origin.x += dx;
                 geo.origin.y += dy;
                 view.set_geometry(ResizeEdge::empty(), &geo);
