@@ -15,11 +15,18 @@ struct Compositor {
     pub edges: ResizeEdge
 }
 
+impl Compositor {
+    fn new() -> Compositor {
+        Compositor {
+            view: None,
+            grab: Point { x: 0, y: 0 },
+            edges: ResizeEdge::empty() }
+    }
+}
+
 lazy_static! {
     static ref COMPOSITOR: RwLock<Compositor> =
-        RwLock::new(Compositor { view: None,
-                                 grab: Point { x: 0, y: 0 },
-                                 edges: ResizeEdge::empty() });
+        RwLock::new(Compositor::new());
 }
 
 fn start_interactive_action(view: &WlcView, origin: &Point) -> bool {
