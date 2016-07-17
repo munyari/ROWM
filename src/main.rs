@@ -26,8 +26,7 @@ impl Compositor {
 }
 
 lazy_static! {
-    static ref COMPOSITOR: RwLock<Compositor> =
-        RwLock::new(Compositor::new());
+    static ref COMPOSITOR: RwLock<Compositor> = RwLock::new(Compositor::new());
 }
 
 fn start_interactive_action(view: &WlcView, origin: &Point) -> bool {
@@ -124,7 +123,8 @@ fn render_output(output: &WlcOutput) {
     for (i, view) in views.iter().enumerate() {
         view.set_geometry(ResizeEdge::empty(), &Geometry {
             origin: Point { x: if toggle { w as i32 } else { 0 }, y: y },
-            size: Size { w: if !toggle && i == views.len() - 1 { resolution.w } else {w}, h: h }
+            size: Size { w: if !toggle && i == views.len() - 1 { resolution.w } 
+                            else { w }, h: h }
         });
         toggle = !toggle;
         y = if y > 0 || !toggle { h as i32 } else { 0 };
