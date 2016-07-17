@@ -4,6 +4,7 @@ extern crate lazy_static;
 extern crate rustwlc;
 
 use std::sync::RwLock;
+use std::io::Write;
 use rustwlc::*;
 use rustwlc::xkb::keysyms;
 
@@ -312,7 +313,18 @@ extern fn on_pointer_motion(_in_view: WlcView, _time: u32,
     }
 }
 
+// a macro for printing to stderr
+macro_rules! println_stderr(
+    ($($arg:tt)*) => { {
+        let r = writeln!(&mut ::std::io::stderr(), $($arg)*);
+        r.expect("failed printing to STDERR");
+    } }
+);
+
 fn main() {
+    // TODO: include license and version stuff
+    println_stderr!("Starting up ROWM");
+
     callback::output_resolution(on_output_resolution);
     callback::view_created(on_view_created);
     callback::view_destroyed(on_view_destroyed);
